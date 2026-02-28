@@ -1,1 +1,5 @@
-/doi_10_5061_dryad_jq2bvq8kp__v20250411/microbiology_cultures_comorbidity.csv
+# Ignore Jupyter Notebook checkpoints
+*.ipynb_checkpoints
+
+# Ignore CSV files in the Dataset directory
+doi_10_5061_dryad_jq2bvq8kp__v20250411/*.csv
