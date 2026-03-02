@@ -4,4 +4,7 @@
 # Ignore CSV files in the Dataset directory
 doi_10_5061_dryad_jq2bvq8kp__v20250411/*.csv
 *.parquet
+*.pkl
+*.pkl.gz
+
 
