@@ -1,0 +1,2 @@
+n_patients,n_encounters,patient_col,encounter_col
+997,3831,anon_id,pat_enc_csn_id_coded
