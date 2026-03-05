@@ -1,2 +1,2 @@
-n_rows,n_columns,n_patients,n_encounters
-1500214,61,997,3831
+n_rows,n_columns,n_patients,n_encounters,n_unique_cultures,target_col,prevalence_resistant,missing_features_gt_50pct,missing_features_gt_80pct
+1213641,71,997,1929,1964,susceptibility,,3,0
