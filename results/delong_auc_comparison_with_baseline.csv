@@ -1,0 +1,8 @@
+Comparison,p_value
+XGBoost vs LogisticRegression_baseline,0.0
+LightGBM vs LogisticRegression_baseline,0.0
+CatBoost vs LogisticRegression_baseline,0.0
+HistGradientBoosting vs LogisticRegression_baseline,0.0
+XGBoost vs LightGBM,3.762865506634743e-66
+XGBoost vs CatBoost,0.0
+XGBoost vs HistGradientBoosting,0.0

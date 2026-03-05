@@ -1,0 +1,8 @@
+Comparison,Statistic,p_value,table_a_both_correct,table_b_model1_correct_model2_wrong,table_c_model1_wrong_model2_correct,table_d_both_wrong,threshold
+XGBoost vs LogisticRegression_baseline,2031.8678314890312,0.0,124875,16495,9260,22490,0.5
+LightGBM vs LogisticRegression_baseline,2130.897133018339,0.0,125296,16135,8839,22850,0.5
+CatBoost vs LogisticRegression_baseline,1707.065939920495,0.0,125162,15428,8973,23557,0.5
+HistGradientBoosting vs LogisticRegression_baseline,1030.832907682646,3.5678275227856176e-226,124674,14424,9461,24561,0.5
+XGBoost vs LightGBM,0.9401932619482893,0.3322281445870194,139486,1884,1945,29805,0.5
+XGBoost vs CatBoost,118.3849005072181,1.4280496799902649e-27,138417,2953,2173,29577,0.5
+XGBoost vs HistGradientBoosting,776.0218176346675,8.81959469502252e-171,136911,4459,2187,29563,0.5
