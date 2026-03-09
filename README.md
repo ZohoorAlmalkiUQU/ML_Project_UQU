@@ -1,8 +1,10 @@
 # ABR_ML
 
-Machine learning pipeline for **antibacterial resistance prediction** using **electronic health record (EHR)-derived microbiology data**.
+This repository contains the code and experimental pipeline used in the study:
 
-This repository organizes the end-to-end workflow for sampling, preprocessing, merging, exploratory data analysis, model development, statistical evaluation, and explainability for an antibacterial resistance prediction study.
+**"Comparative Evaluation of Ensemble Machine Learning Models for Predicting Antibacterial Resistance from Electronic Health Records"**
+
+The project investigates the effectiveness of ensemble machine learning models for predicting antibacterial resistance using microbiological culture data and patient-level clinical variables extracted from electronic health records.
 
 ---
 
@@ -10,7 +12,7 @@ This repository organizes the end-to-end workflow for sampling, preprocessing, m
 
 The project is structured as a notebook-driven research pipeline. Based on the repository contents, it includes:
 
-* sample creation and preparation
+* patient-level sampling and dataset preparation
 * feature merging and dataset construction
 * exploratory data analysis
 * main machine learning pipeline
@@ -37,6 +39,7 @@ ABR_ML/
 ├── figs/
 ├── new_sample_one/
 ├── new_sample_one_processed/
+├── merged_sample_one_processed/
 ├── results/
 ├── shap/
 ├── statistics/
@@ -110,25 +113,34 @@ Depending on the notebook configuration, generated outputs may be saved in:
 
 ## Data
 
-The repository includes local data-related folders for sampled and processed data, as well as a DOI-linked dataset directory:
+The repository contains directories used to store sampled and processed data generated during the workflow, as well as a folder for the downloaded ARMD dataset:
 
 * `new_sample_one/`
 * `new_sample_one_processed/`
+* `merged_sample_one_processed/`
 * `doi_10_5061_dryad_jq2bvq8kp__v20250411/`
 
 Because this is a research repository, some datasets may be large, partially processed, de-identified, or subject to source-specific access conditions. Review the notebook code and directory contents carefully before reuse.
 
 ---
+## Quick Start
+
+Clone the repository:
+
+```bash
+git clone https://github.com/ZohoorAlmalkiUQU/ABR_ML.git
+cd ABR_ML
+```
 
 ## Environment Setup
 
-Create a Python environment and install the packages used in the notebooks.
+Create a Python environment and install the required dependencies.
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -U pip
-pip install jupyter numpy pandas scipy scikit-learn matplotlib xgboost lightgbm catboost shap pyarrow fastparquet
+pip install -r requirements.txt
 ```
 
 Then launch Jupyter:
@@ -137,35 +149,213 @@ Then launch Jupyter:
 jupyter notebook
 ```
 
-> It is a good idea to export a pinned `requirements.txt` or `environment.yml` from your working environment for exact reproducibility.
-
 ---
 
 ## Reproducibility Notes
 
-To improve reproducibility, consider documenting the following in the codebase if not already included:
+This repository is designed to support reproducible machine learning experiments for antimicrobial resistance prediction using the **Antibiotic Resistance Microbiology Dataset (ARMD)**.
 
-* Python version
-* package versions
-* random seeds
-* exact train/test split strategy
-* patient/group leakage prevention strategy
-* handling of missing values
-* feature inclusion/exclusion rules
-* calibration and threshold selection procedures
+Key implementation details are documented to ensure experimental transparency and reproducibility.
+
+### Environment
+
+- **Python version:** 3.11.14  
+- **Package versions:** specified in `requirements.txt`  
+- **Random seed:** 42 (used across dataset splitting, cross-validation, and model training)
+
+### Dataset
+
+The experiments use the **Antibiotic Resistance Microbiology Dataset (ARMD)**, a large de-identified dataset derived from electronic health records (EHR) from **Stanford Healthcare**.
+
+The dataset integrates multiple clinical domains including:
+
+- microbiological culture results
+- organism identification
+- antibiotic susceptibility testing
+- patient demographics
+- laboratory measurements
+- vital signs
+- prior medication exposure
+- antibiotic exposure history
+- comorbidity profiles
+
+#### Data Linking
+
+Records across dataset tables are linked using the following identifiers:
+
+- `anon_id` – de-identified patient identifier  
+- `pat_enc_csn_id_coded` – encounter identifier  
+- `order_proc_id_coded` – microbiology culture order identifier  
+- `order_time_jittered_utc` – jittered timestamp to preserve temporal ordering while protecting privacy
+
+#### Dataset Access
+
+The ARMD dataset is publicly available for research purposes through **Dryad**.
+
+Due to dataset size and licensing restrictions, the raw data are **not included in this repository**.
+
+Researchers can obtain the dataset from the official source.
+
+#### Dataset Citation
+
+If you use the dataset, please cite:
+
+Nateghi Haredasht, F., et al.  
+*Antibiotic Resistance Microbiology Dataset (ARMD).*  
+Dryad Digital Repository.  
+https://doi.org/10.5061/dryad.jq2bvq8kp
+
+#### Source Tables
+
+The following tables from the ARMD dataset were used as the primary data sources:
+
+- `microbiology_cultures_cohort`
+- `microbiology_cultures_prior_med`
+- `microbiology_cultures_demographics`
+- `microbiology_cultures_labs`
+- `microbiology_cultures_vitals`
+- `microbiology_cultures_antibiotic_class_exposure`
+- `microbiology_cultures_comorbidity`
+
+### Sampling Strategy
+
+The original ARMD dataset contains microbiological culture records from over **283,000 adult patients**.  
+To make model development computationally feasible while preserving meaningful variation in antimicrobial resistance outcomes, a patient-level sampling procedure was applied.
+
+The sampling process was performed as follows:
+
+1. A subset of patient identifiers (`anon_id`) was randomly selected using a fixed random seed (**seed = 42**).
+2. All microbiological culture records corresponding to the selected patients were retrieved from the cohort dataset.
+3. This approach ensures that **entire patient histories are preserved**, rather than sampling individual rows.
+
+After sampling:
+
+- **997 unique patients** were retained.
+- All associated culture records for these patients were included in the working dataset.
+
+Because multiple culture records may exist for the same patient, the resulting dataset contains **multiple observations per patient**.
+
+#### Sampled Tables Used in This Repository
+
+After the patient-level sampling step (`00_sampling.ipynb`), the following sampled tables were generated and used in the modeling pipeline:
+
+- `cultures_cohort.parquet`
+- `prior_med.parquet`
+- `cultures_demographics.parquet`
+- `cultures_labs.parquet`
+- `cultures_vitals.parquet`
+- `antibiotic_class_exposure.parquet`
+- `cultures_comorbidity.parquet`
+
+### Train/Test Split Strategy
+
+To prevent information leakage:
+
+- data are split **at the patient level**
+- unique `anon_id` identifiers are used for splitting
+- **80% of patients** are used for model development
+- **20% of patients** are reserved for testing
+
+This ensures that records from the same patient never appear in both training and test sets.
+
+### Cross-Validation
+
+Model development uses **GroupKFold cross-validation**, where:
+
+- groups = patient identifiers (`anon_id`)
+- each fold contains disjoint patient groups
+- leakage between folds is prevented
+
+### Missing Data Handling
+
+In the original dataset:
+
+- missing values are represented as **`null`**
+
+Handling strategy:
+
+- tree-based ensemble models (XGBoost, LightGBM, CatBoost, HistGradientBoosting) are used because they **handle missing values natively**
+- no global imputation is applied unless baseline model explicitly noted in `04_main_pipeline.ipynb`
+
+### Feature Inclusion Rules
+
+Features were retained if they:
+
+- were available **prior to or near the culture order time**
+- represented clinically relevant variables such as laboratory results, vital signs, medication exposure, or comorbidities
+
+### Feature Exclusion Rules
+
+The following types of variables were removed to prevent leakage or redundancy:
+
+- direct identifiers
+- encounter identifiers
+- timestamps
+- variables derived directly from the prediction target
+- very sparse features
+
+### Probability Calibration
+
+Final models undergo **probability calibration using isotonic regression** applied to cross-validation predictions.
+
+### Threshold Selection
+
+Classification thresholds are selected based on validation performance metrics to balance precision and recall for resistance prediction.
 
 ---
 
-## Suggested README Additions for Publication-Ready Use
+### Models Implemented
+The following machine learning models are evaluated:
 
-For a stronger public research repository, you may also want to add:
+- XGBoost
+- LightGBM
+- CatBoost
+- HistGradientBoostingClassifier
 
-* a short project objective statement
-* dataset provenance and access notes
-* model list and evaluation metrics
-* example final results table
-* citation information for the associated paper or preprint
-* acknowledgment of collaborators/supervisors
+### Evaluation and Statistical Analysis
+
+Model performance is evaluated using multiple complementary approaches assessing discrimination, calibration, and clinical utility.
+
+#### Discrimination Metrics
+
+- ROC–AUC
+- PR–AUC
+
+#### Threshold-Based Metrics
+
+- F1 Score
+- Precision
+- Recall
+
+#### Calibration
+
+Calibration performance is evaluated using:
+
+- Brier Score
+
+Probability calibration is performed using **isotonic regression** applied to cross-validation predictions.
+
+#### Statistical Comparison of Models
+
+To assess whether performance differences between models are statistically significant:
+
+- **DeLong test** is used to compare ROC–AUC values between models.
+- **McNemar’s test** is used to compare paired classification errors between models on the test set.
+
+#### Clinical Utility Analysis
+
+To evaluate the potential clinical usefulness of the models, **Decision Curve Analysis (DCA)** is performed.  
+This analysis estimates the **net benefit** of using each model across a range of decision thresholds and compares it against baseline strategies (treat-all and treat-none).
+
+#### Uncertainty Estimation
+
+Confidence intervals for key evaluation metrics are estimated using **bootstrap resampling**.
+
+#### Model Explainability
+
+Model interpretability is analyzed using **SHAP (SHapley Additive exPlanations)** to identify clinically relevant predictors of antibacterial resistance.
+
+Confidence intervals are estimated using bootstrap resampling.
 
 ---
 
@@ -175,8 +365,8 @@ If you use this repository, cite the associated manuscript or project repository
 
 ```bibtex
 @misc{almalki_abr_ml,
-  author       = {Zohoor Almalki},
-  title        = {ABR_ML: Antibiotic Resistance Prediction},
+  author       = {Zohoor Almalki, Amjad Althagafi, Sarah Al-shareef},
+  title        = {ABR_ML: Antibacterial Resistance Prediction},
   year         = {2026},
   publisher    = {GitHub},
   howpublished = {\url{https://github.com/ZohoorAlmalkiUQU/ABR_ML}}
@@ -193,4 +383,8 @@ This repository is released under the **MIT License**.
 
 ## Contact
 
-For questions or collaboration related to this repository, please open an issue in the repository or contact the maintainer through the associated GitHub profile.
+For questions or collaboration related to this repository, please contact me:
+
+Zohoor Almalki. </br>
+Master’s Student, Artificial Intelligence - Umm Al-Qura University. </br>
+S44680217@uqu.edu.sa
