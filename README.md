@@ -291,8 +291,8 @@ The following types of variables were removed to prevent leakage or redundancy:
 - direct identifiers
 - encounter identifiers
 - timestamps
-- variables derived directly from the prediction target
 - very sparse features
+- variables identified as non-informative during preprocessing (see notebook `01_prepare_sample.ipynb`)
 
 ### Probability Calibration
 
